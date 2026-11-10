@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="author" content="Mohd Sarfaraz">
+<title>Medicine Price Calculator</title>
+<style>
+:root{
+  --bg:#eef3f2;--card:#ffffff;--text:#13211f;--muted:#5d6e6b;--line:#cfdad7;
+  --chip:#e4ecea;--accent:#0b6b5c;--on-accent:#ffffff;--result:#e3f3ef;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0e1514;--card:#162120;--text:#e8f1ef;--muted:#93a6a2;--line:#2b3b38;
+    --chip:#213230;--accent:#4fd1b8;--on-accent:#06201b;--result:#173a34;color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0e1514;--card:#162120;--text:#e8f1ef;--muted:#93a6a2;--line:#2b3b38;
+  --chip:#213230;--accent:#4fd1b8;--on-accent:#06201b;--result:#173a34;color-scheme:dark;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.4}
+main{max-width:460px;margin:0 auto;padding:20px 16px 32px}
+h1{font-size:1.25rem;margin:0 0 16px;font-weight:700}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:12px}
+label,.lbl{display:block;font-size:.9rem;font-weight:600;margin-bottom:8px}
+.hint{font-weight:400;color:var(--muted)}
+.row{display:flex;gap:10px}
+.field{flex:1}
+input{width:100%;font:inherit;font-size:1.15rem;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--text)}
+input:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:8px}
+button.chip{font:inherit;font-size:1rem;font-weight:600;padding:12px 0;border-radius:10px;border:1px solid var(--line);background:var(--chip);color:var(--text);cursor:pointer}
+button.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.result{background:var(--result);border-color:var(--accent)}
+.final{font-size:2.8rem;font-weight:800;line-height:1.1;margin:4px 0 12px;color:var(--accent)}
+.line{display:flex;justify-content:space-between;padding:6px 0;border-top:1px solid var(--line);font-size:.95rem}
+.line span:first-child{color:var(--muted)}
+.add{width:100%;font:inherit;font-size:1.05rem;font-weight:700;padding:14px;border-radius:12px;border:0;background:var(--accent);color:var(--on-accent);cursor:pointer;margin-bottom:12px}
+.item{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:.95rem}
+.item .nm{flex:1}
+.item .sub{color:var(--muted);font-size:.8rem}
+.item button{font:inherit;font-size:.85rem;border:1px solid var(--line);background:var(--chip);color:var(--text);border-radius:8px;padding:4px 10px;cursor:pointer}
+.grand{font-weight:800;font-size:1.3rem;color:var(--accent)}
+.empty{color:var(--muted);font-size:.9rem;padding:4px 0 8px}
+.foot{text-align:center;color:var(--muted);font-size:.85rem;margin-top:20px}
+.foot a{color:var(--accent)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Medicine price calculator</h1>
+
+  <div class="card">
+    <div class="row">
+      <div class="field">
+        <label for="price">Strip price (₹)</label>
+        <input id="price" type="number" inputmode="decimal" min="0" placeholder="0" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="total">Parts in strip</label>
+        <input id="total" type="number" inputmode="numeric" min="1" max="60" value="10" autocomplete="off">
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Parts sold <span class="hint" id="partsHint"></span></div>
+    <div class="grid" id="parts"></div>
+  </div>
+
+  <div class="card">
+    <div class="lbl">Discount</div>
+    <div class="grid" id="discs"></div>
+    <label for="custom" style="margin-top:12px">Or type your own discount (%)</label>
+    <input id="custom" type="number" inputmode="decimal" min="0" max="100" step="any" placeholder="e.g. 12.5" autocomplete="off">
+  </div>
+
+  <div class="card result">
+    <div class="lbl">Customer pays</div>
+    <div class="final" id="final">₹0.00</div>
+    <div class="line"><span>Price of parts</span><span id="base">₹0.00</span></div>
+    <div class="line"><span>Discount</span><span id="off">₹0.00</span></div>
+  </div>
+
+  <button type="button" class="add" id="add">Add to bill</button>
+
+  <div class="card">
+    <div class="lbl">Bill <span class="hint" id="count"></span></div>
+    <div id="bill"></div>
+    <div class="line"><span>Bill total</span><span class="grand" id="grand">₹0.00</span></div>
+    <button type="button" class="chip" id="clear" style="width:100%;margin-top:10px">Clear bill</button>
+  </div>
+  <p class="foot">Made by <a href="https://github.com/myselfmohdsarfaraz">Mohd Sarfaraz</a></p>
+</main>
+
+<script>
+(function () {
+  // quick discount buttons (in %)
+  var DISCOUNTS = [0, 5, 10, 15, 20, 25];
+  var state = { parts: 1, disc: 0 };
+  var priceEl = document.getElementById('price');
+  var totalEl = document.getElementById('total');
+  var partsEl = document.getElementById('parts');
+  var discsEl = document.getElementById('discs');
+  var customEl = document.getElementById('custom');
+  // medicines added to the bill
+  var items = [];
+  var current = 0;
+
+  // show a number as rupees, e.g. ₹1,250.00
+  function money(n) {
+    return '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function getTotal() {
+    var t = Math.floor(parseFloat(totalEl.value));
+    if (!(t >= 1)) t = 1;
+    return Math.min(t, 60);
+  }
+  // build a row of buttons and mark the selected one
+  function makeButtons(host, values, current, label, onPick) {
+    host.innerHTML = '';
+    values.forEach(function (v) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip';
+      b.textContent = label(v);
+      b.setAttribute('aria-pressed', v === current ? 'true' : 'false');
+      b.addEventListener('click', function () { onPick(v); });
+      host.appendChild(b);
+    });
+  }
+  // redraw the buttons and recalculate the price
+  function render() {
+    var total = getTotal();
+    if (state.parts > total) state.parts = total;
+    var list = [];
+    for (var i = 1; i <= total; i++) list.push(i);
+    makeButtons(partsEl, list, state.parts, String, function (v) { state.parts = v; render(); });
+    makeButtons(discsEl, DISCOUNTS, state.disc, function (v) { return v + '%'; }, function (v) { state.disc = v; customEl.value = ''; render(); });
+    document.getElementById('partsHint').textContent = '(out of ' + total + ')';
+
+    var price = parseFloat(priceEl.value);
+    if (!(price >= 0)) price = 0;
+    var base = price * state.parts / total;
+    var off = base * state.disc / 100;
+    document.getElementById('base').textContent = money(base);
+    document.getElementById('off').textContent = '−' + money(off);
+    current = base - off;
+    document.getElementById('final').textContent = money(base - off);
+  }
+  priceEl.addEventListener('input', render);
+  totalEl.addEventListener('input', render);
+  customEl.addEventListener('input', function () {
+    var d = parseFloat(customEl.value);
+    if (!(d >= 0)) d = 0;
+    state.disc = Math.min(d, 100);
+    render();
+  });
+  var billEl = document.getElementById('bill');
+  // redraw the bill list and the bill total
+  function renderBill() {
+    billEl.innerHTML = '';
+    var sum = 0;
+    if (!items.length) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'No medicines added yet.';
+      billEl.appendChild(e);
+    }
+    items.forEach(function (it, i) {
+      sum += it.amount;
+      var row = document.createElement('div');
+      row.className = 'item';
+      var nm = document.createElement('div');
+      nm.className = 'nm';
+      nm.innerHTML = '<div>Medicine ' + (i + 1) + '</div><div class="sub">' + it.parts + '/' + it.total + ' parts, ' + it.disc + '% off</div>';
+      var amt = document.createElement('div');
+      amt.textContent = money(it.amount);
+      var rm = document.createElement('button');
+      rm.type = 'button';
+      rm.textContent = 'Remove';
+      rm.setAttribute('aria-label', 'Remove medicine ' + (i + 1));
+      rm.addEventListener('click', function () { items.splice(i, 1); renderBill(); });
+      row.appendChild(nm);
+      row.appendChild(amt);
+      row.appendChild(rm);
+      billEl.appendChild(row);
+    });
+    document.getElementById('grand').textContent = money(sum);
+    document.getElementById('count').textContent = items.length ? '(' + items.length + ' items)' : '';
+  }
+  document.getElementById('add').addEventListener('click', function () {
+    var price = parseFloat(priceEl.value);
+    if (!(price > 0)) { priceEl.focus(); return; }
+    items.push({ parts: state.parts, total: getTotal(), disc: state.disc, amount: Math.round(current * 100) / 100 });
+    priceEl.value = '';
+    state.parts = 1;
+    render();
+    renderBill();
+    priceEl.focus();
+  });
+  var clearEl = document.getElementById('clear');
+  var armed = false;
+  clearEl.addEventListener('click', function () {
+    if (!items.length) return;
+    if (!armed) {
+      armed = true;
+      clearEl.textContent = 'Tap again to clear';
+      setTimeout(function () { armed = false; clearEl.textContent = 'Clear bill'; }, 3000);
+      return;
+    }
+    armed = false;
+    clearEl.textContent = 'Clear bill';
+    items = [];
+    renderBill();
+  });
+  renderBill();
+  render();
+})();
+</script>
+</body>
+</html>
